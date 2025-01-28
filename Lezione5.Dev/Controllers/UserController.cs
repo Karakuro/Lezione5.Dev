@@ -10,14 +10,19 @@ namespace Lezione5.Dev.Controllers
     public class UserController : ControllerBase
     {
         private static List<User> _users = new List<User>();
+        private readonly ILogger<UserController> _logger;
+        private readonly Mapper _mapper = new Mapper();
+
+        public UserController(ILogger<UserController> logger, Mapper mapper)
+        {
+            _logger = logger;
+            _mapper = mapper;
+        }
 
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(_users.ConvertAll(u => new UserDTO() { 
-                Nickname = u.Nickname, 
-                Id = u.Id 
-            }));
+            return Ok(_users.ConvertAll(_mapper.MapEntityToDTO));
         }
 
         [HttpGet("{id}")]
@@ -79,8 +84,11 @@ namespace Lezione5.Dev.Controllers
             {
                 int result = _users.RemoveAll(u => u.Id == id);
                 if (result > 1)
+                {
+                    _logger.LogCritical($"Attenzione, dati sporchi in database con id: {id}");
                     return StatusCode(StatusCodes.Status500InternalServerError,
                     "Errore critico del server");
+                }
                 return result == 1 ? Ok() : BadRequest();
             }
             catch (Exception)
